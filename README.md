@@ -4,8 +4,7 @@
   #### Ready to run on AWS cloud with minimal setup. 
 
 
-  ![Application Flow](/Users/ansari/Documents/misc/tweet-app.jpg)
-
+<img src="/Users/ansari/Documents/misc/tweet-app.jpg"/>
 
  - Consume tweets directly from Twitter API via long-running HTTPS connection. 
  - Sends the tweets to ingestor service via Kinesis stream.
