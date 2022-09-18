@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: twitter-search
+  name: twitter-search
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: twitter-search
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: twitter-search
+    spec:
+      containers:
+        - image: 349463221567.dkr.ecr.us-east-1.amazonaws.com/twitter-search:IMAGE_VERSION
+          name: twitter-search
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8092
+          volumeMounts:
+            - mountPath: /data
+              name: search-data
+      volumes:
+        - name: search-data
+          emptyDir: {}

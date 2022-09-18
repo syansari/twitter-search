@@ -1,0 +1,7 @@
+server:
+  port: 8092
+
+es:
+  hostname: search-twitter-search-ngcxxyml72eoyfacar4sccfs3q.us-east-1.es.amazonaws.com
+  port: 443
+  scheme: https

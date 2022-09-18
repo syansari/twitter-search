@@ -1,0 +1,170 @@
+stages:
+  - build
+  - test
+  - publish
+  - deploy
+
+variables:
+  DOCKER_REGISTRY: 349463221567.dkr.ecr.us-east-1.amazonaws.com/twitter
+  AWS_REGION: aws-east-1
+  DOCKER_HOST: tcp://docker:2375
+
+.consumer:
+  variables:
+    APP_NAME: consumer
+
+.producer:
+  variables:
+    APP_NAME: producer
+
+.search:
+  variables:
+    APP_NAME: search
+
+build search:
+  #  when: manual
+  stage: build
+  extends:
+    - .search
+    - .build_template
+
+test search:
+  stage: test
+  when: manual
+  extends:
+    - .search
+    - .unit_test_template
+  needs: ["build search"]
+
+publish search:
+  stage: publish
+  #  when: manual
+  extends:
+    - .search
+    - .docker_build_template
+  needs: ["build search"] #"test consumer"]
+
+deploy search:
+  stage: deploy
+  extends:
+    - .search
+    - .deploy_template
+  needs: [ "publish search" ]
+
+build consumer:
+#  when: manual
+  stage: build
+  extends:
+    - .consumer
+    - .build_template
+
+test consumer:
+  stage: test
+  when: manual
+  extends:
+    - .consumer
+    - .unit_test_template
+  needs: ["build consumer"]
+
+publish consumer:
+  stage: publish
+#  when: manual
+  extends:
+    - .consumer
+    - .docker_build_template
+  needs: ["build consumer"] #"test consumer"]
+
+deploy consumer:
+  stage: deploy
+  extends:
+    - .consumer
+    - .deploy_template
+  needs: ["publish consumer"]
+
+build producer:
+#  when: manual
+  stage: build
+  extends:
+    - .producer
+    - .build_template
+
+test producer:
+  stage: test
+  when: manual
+  extends:
+    - .producer
+    - .unit_test_template
+  needs: ["build producer"]
+
+publish producer:
+#  when: manual
+  stage: publish
+  extends:
+    - .producer
+    - .docker_build_template
+  needs: ["build producer"] # "test producer"]
+
+deploy producer:
+  stage: deploy
+  extends:
+    - .producer
+    - .deploy_template
+#  needs: ["publish producer"]
+
+.deploy_template:
+  image:
+    name: amazon/aws-cli
+    entrypoint: [""]
+  script:
+    - apk update  && apk add --no-cache curl
+    - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    - chmod +x ./kubectl && mv ./kubectl /usr/local/bin/kubectl
+    - mkdir -p $HOME/.kube
+    - aws s3 cp s3://twitter-ingestion/kube-config/config $HOME/.kube/config
+    - sed -i 's/alpha/beta/g' $HOME/.kube/config
+    - aws sts get-caller-identity
+    - kubectl get nodes
+    - sed -i 's/IMAGE_VERSION/'$CI_PIPELINE_IID'/g' $APP_NAME/deployment.yml
+    - kubectl apply -f $APP_NAME/deployment.yml
+    - if [$APP_NAME == "search"]; then kubectl apply -f $APP_NAME/public-ip-service.yml kubectl apply -f $APP_NAME/nodePort.yml; fi
+#    - kubectl apply -f $APP_NAME/public-ip-service.yml
+
+.build_template:
+  image: adoptopenjdk/openjdk11
+  script:
+    - echo $CI_COMMIT_BRANCH $CI_COMMIT_DESCRIPTION $CI_COMMIT_REF_SLUG
+    - ls -al
+    - ./gradlew build
+  artifacts:
+    when:
+      always
+    paths:
+      - ./$APP_NAME/build/libs/
+
+.unit_test_template:
+  image: adoptopenjdk/openjdk11
+  script:
+  - ./gradlew test
+  artifacts:
+    when: always
+    paths:
+      - ./$APP_NAME/build/reports/tests
+    reports:
+      junit:
+      - ./$APP_NAME/build/test-results/test/*.xml
+
+.docker_build_template:
+  image:
+    name: amazon/aws-cli
+    entrypoint: [""]
+  services:
+    - docker:dind
+  before_script:
+    - amazon-linux-extras install docker
+    - aws --version
+    - docker --version
+  script:
+    - cd $APP_NAME && ls -al
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $DOCKER_REGISTRY
+    - docker build -t $DOCKER_REGISTRY-$APP_NAME:$CI_PIPELINE_IID .
+    - docker push $DOCKER_REGISTRY-$APP_NAME:$CI_PIPELINE_IID

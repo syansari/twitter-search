@@ -1,0 +1,17 @@
+http:
+  client:
+    connectTimeoutSec: 10
+
+kinesis:
+  maxConcurrency: 2
+  maxPendingConnectionAcquires: 10
+  streamName: twitter-search-stream
+  batchCount: 10
+
+server:
+  port: 8090
+
+worker:
+  threadPool:
+    count: 4
+

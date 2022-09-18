@@ -1,0 +1,20 @@
+dynamodb:
+  endpoint: https://dynamodb.us-east-1.amazonaws.com
+  tableName: tweets
+
+esService:
+  connectTimeoutSec: 10
+  endpoint: http://twitter-search/es/add # local: http://localhost:8092/es/add
+
+kinesis:
+  maxConcurrency: 2
+  maxPendingConnectionAcquires: 10
+  streamName: twitter-search-stream
+  batchCount: 10
+
+server:
+  port: 8091
+
+worker:
+  threadPool:
+    count: 4

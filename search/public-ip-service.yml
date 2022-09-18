@@ -1,0 +1,12 @@
+# expose LB to make API call that would in turn search ES index and return result back
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-svc
+spec:
+  selector:
+    app: twitter-search
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8092
