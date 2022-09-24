@@ -18,7 +18,7 @@ spec:
         app: twitter-consumer
     spec:
       containers:
-        - image: 349463221567.dkr.ecr.us-east-1.amazonaws.com/twitter-consumer:IMAGE_VERSION
+        - image: xxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/twitter-consumer:IMAGE_VERSION
           name: twitter-consumer
           imagePullPolicy: Always
           ports:
